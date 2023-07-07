@@ -6,3 +6,11 @@ mysql:
   maxOpenConns: 100
   connMaxIdleTime: 5
   connMaxLifetime: 30
+redis:
+  dsn: 127.0.0.1:6379
+  db: 8
+  poolSize: 100
+  minIdleConns: 10
+  connMaxIdleTime: 5 #单位为分钟
+  connMaxLifetime: 30 #单位为分钟
+  ttl: 60 #单位为秒

@@ -17,10 +17,20 @@ type MysqlConfig struct {
 	ConnMaxIdleTime int    `yaml:"connMaxIdleTime"`
 	ConnMaxLifetime int    `yaml:"connMaxLifetime"`
 }
+type RedisConfig struct {
+	DSN             string `yaml:"dsn"`
+	DB              int    `yaml:"db"`
+	PoolSize        int    `yaml:"poolSize"`
+	MinIdleConns    int    `yaml:"minIdleConns"`
+	ConnMaxIdleTime int    `yaml:"connMaxIdleTime"`
+	ConnMaxLifetime int    `yaml:"connMaxLifetime"`
+	TTL             int    `yaml:"ttl"`
+}
 
 type Config struct {
 	Listen ListenConfig `yaml:"listen"`
 	Mysql  MysqlConfig  `yaml:"mysql"`
+	Redis  RedisConfig  `yaml:"redis"`
 }
 
 func GetConfig(path string) (Config, error) {

@@ -2,7 +2,14 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+	"gopkg.in/yaml.v3"
 )
 
 // Ticket的获取和储存操作
@@ -15,32 +22,56 @@ type UserInfo struct {
 	Username string `json:"username"`
 }
 
-type Store interface {
-	GetTicket(ctx context.Context, ticket string) (UserInfo, error)
-	SetTicket(ctx context.Context, ticket string, info UserInfo) error
-}
+//type Store interface {
+//	GetTicket(ctx context.Context, ticket string) (UserInfo, error)
+//	SetTicket(ctx context.Context, ticket string, info UserInfo) error
+//}
 
-type memStore struct {
-	ticketMap map[string]UserInfo
-}
-
-func NewMemStore() Store {
-	return &memStore{
-		ticketMap: map[string]UserInfo{},
+func SetTicketToRedis(ctx context.Context, ticket string, r *redis.Client, info UserInfo) error {
+	jsoninfo, _ := json.Marshal(info)
+	data := string(jsoninfo)
+	ttl := getTTL()
+	result := r.Set(ctx, ticket, data, time.Duration(ttl)*time.Second)
+	if result.Err() != nil {
+		fmt.Println("redis set fault")
+		return nil
 	}
-}
-
-func (store *memStore) SetTicket(_ context.Context, ticket string, info UserInfo) error {
-	store.ticketMap[ticket] = info
+	fmt.Println("redis set success")
 	return nil
 }
+func GetTicketFromRedis(ctx context.Context, ticket string, r *redis.Client) (UserInfo, error) {
 
-func (store *memStore) GetTicket(_ context.Context, ticket string) (UserInfo, error) {
-	info, exists := store.ticketMap[ticket]
-	if exists {
-		//获取ticket之后，删除ticket，防止内存中ticket过多
-		delete(store.ticketMap, ticket)
+	existe, _ := r.Exists(ctx, ticket).Result()
+	var info UserInfo
+	if existe == 1 {
+		jsoninfo, err := r.Get(ctx, ticket).Result()
+		if err != nil {
+			return UserInfo{}, ErrTicketNotExists
+		}
+		err = json.Unmarshal([]byte(jsoninfo), &info)
+		if err != nil {
+			return UserInfo{}, ErrTicketNotExists
+		}
 		return info, nil
 	}
+
 	return UserInfo{}, ErrTicketNotExists
+}
+
+type TTL struct {
+	Redis struct {
+		TTL int `yaml:"ttl"`
+	} `yaml:"redis"`
+}
+
+func getTTL() int {
+	b, err := os.ReadFile("config/config.yaml")
+	if err != nil {
+		panic(err)
+	}
+	var cfg TTL
+	if err := yaml.Unmarshal(b, &cfg); err != nil {
+		panic(err)
+	}
+	return cfg.Redis.TTL
 }

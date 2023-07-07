@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"git.blauwelle.com/go/crate/log"
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/reqlog"
 	"gorm.io/gorm"
@@ -13,13 +14,13 @@ import (
 	"git.blauwelle.com/go/crate/cmd/sso/util"
 )
 
-func NewRouter(db *gorm.DB, jwt *util.JWT) *bunrouter.Router {
+func NewRouter(db *gorm.DB, redisDB *redis.Client, jwt *util.JWT) *bunrouter.Router {
 	log.Info(context.TODO(), "Loading routes...")
 	router := bunrouter.New(bunrouter.Use(
 		reqlog.NewMiddleware(),
 	))
 
-	handlers := handler.NewHandler(db, jwt)
+	handlers := handler.NewHandler(db, redisDB, jwt)
 	registerRoutes(router, handlers, jwt, db)
 
 	return router

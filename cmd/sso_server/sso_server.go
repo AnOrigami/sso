@@ -58,7 +58,9 @@ func run() error {
 		return err
 	}
 
-	routers := router.NewRouter(db, jwt)
+	redisDB, err := database.NewRedis(cfg)
+
+	routers := router.NewRouter(db, redisDB, jwt)
 	group := exegroup.Default()
 	group.New().WithGoStop(eghttp.HTTPListenAndServe(eghttp.WithServerOption(func(server *http.Server) {
 		server.Addr = ":" + strconv.Itoa(cfg.Listen.Port)

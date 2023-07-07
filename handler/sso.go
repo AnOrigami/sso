@@ -10,6 +10,7 @@ import (
 
 	"git.blauwelle.com/go/crate/log"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bunrouter"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -22,18 +23,18 @@ import (
 )
 
 type Handler struct {
-	db    *gorm.DB
-	store util.Store
-	r     util.StringRand
-	j     *util.JWT
+	db      *gorm.DB
+	redisDB *redis.Client
+	r       util.StringRand
+	j       *util.JWT
 }
 
-func NewHandler(db *gorm.DB, jwtService *util.JWT) *Handler {
+func NewHandler(db *gorm.DB, redisDB *redis.Client, jwtService *util.JWT) *Handler {
 	return &Handler{
-		db:    db,
-		store: util.NewMemStore(),
-		r:     util.NewStringRand(),
-		j:     jwtService,
+		db:      db,
+		redisDB: redisDB,
+		r:       util.NewStringRand(),
+		j:       jwtService,
 	}
 }
 
@@ -131,7 +132,7 @@ func (h *Handler) SSOLogin() bunrouter.HandlerFunc {
 			return response.Error(rw, response.MessageUnauthorized, bunrouter.H{})
 		}
 		ticket := h.r.RandString(20)
-		if err := h.store.SetTicket(ctx, ticket, util.UserInfo{
+		if err := util.SetTicketToRedis(ctx, ticket, h.redisDB, util.UserInfo{
 			ID:       user.ID,
 			Username: user.Username,
 		}); err != nil {
@@ -180,7 +181,7 @@ func (h *Handler) SSOVerify() bunrouter.HandlerFunc {
 			return response.Error(rw, response.MessageBindError, bunrouter.H{})
 		}
 
-		info, err := h.store.GetTicket(ctx, request.Ticket)
+		info, err := util.GetTicketFromRedis(ctx, request.Ticket, h.redisDB)
 		if err != nil {
 			if errors.Is(err, util.ErrTicketNotExists) {
 				return response.Error(rw, response.MessageBadTicket, bunrouter.H{})

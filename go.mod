@@ -6,6 +6,7 @@ require (
 	git.blauwelle.com/go/crate/exegroup v0.6.0
 	git.blauwelle.com/go/crate/log v1.13.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/redis/go-redis/v9 v9.0.5
 	github.com/spf13/cobra v1.7.0
 	github.com/uptrace/bunrouter v1.0.20
 	github.com/uptrace/bunrouter/extra/reqlog v1.0.20
@@ -16,6 +17,8 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
