@@ -45,5 +45,7 @@ func registerRoutes(router *bunrouter.Router, handlers *handler.Handler, jwt *ut
 		g.DELETE("/user/admin", handlers.ConcelAdmin())
 		g.POST("/app/", handlers.CreateApp())
 		g.GET("/app/", handlers.SearchApp())
+		g.DELETE("/app/", handlers.DeleteApp())
+		g.PUT("/app/", handlers.UpdateApp())
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"git.blauwelle.com/go/crate/log"
 	"github.com/uptrace/bunrouter"
 
 	"git.blauwelle.com/go/crate/cmd/sso/model"
@@ -70,6 +71,56 @@ func (h *Handler) SearchApp() bunrouter.HandlerFunc {
 			return response.Error(rw, response.MessageDatabaseConnectionError, bunrouter.H{})
 		}
 		return response.WriteOK(rw, response.MessageOK, response.NewPaginationData(pageInt, pageSizeInt, applications))
+	}
+}
+
+type DeleteAppRequest struct {
+	ID uint `json:"id"`
+}
+
+func (h *Handler) DeleteApp() bunrouter.HandlerFunc {
+	return func(rw http.ResponseWriter, req bunrouter.Request) error {
+		ctx := req.Context()
+		var request DeleteAppRequest
+
+		if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+			log.Error(ctx, err.Error())
+			return response.Error(rw, response.MessageBindError, bunrouter.H{})
+		}
+		if db := h.db.Delete(&model.Application{}, "id=?", request.ID); db.Error != nil {
+
+			return response.Error(rw, response.MessageDatabaseConnectionError, bunrouter.H{})
+		}
+
+		return response.WriteOK(rw, response.MessageOK, bunrouter.H{})
+	}
+}
+
+type UpdateAppRequest struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	Site     string `json:"site"`
+	Redirect string `json:"redirect"`
+}
+
+func (h *Handler) UpdateApp() bunrouter.HandlerFunc {
+	return func(rw http.ResponseWriter, req bunrouter.Request) error {
+		ctx := req.Context()
+		var request UpdateAppRequest
+
+		if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+			log.Error(ctx, err.Error())
+			return response.Error(rw, response.MessageBindError, bunrouter.H{})
+		}
+		updates := map[string]interface{}{
+			"name":     request.Name,
+			"site":     request.Site,
+			"redirect": request.Redirect,
+		}
+		if h.db.Model(&model.Application{}).Where("id=?", request.ID).Updates(updates).Error != nil {
+			return response.Error(rw, response.MessageDatabaseConnectionError, bunrouter.H{})
+		}
+		return response.WriteOK(rw, response.MessageOK, bunrouter.H{})
 	}
 }
 
